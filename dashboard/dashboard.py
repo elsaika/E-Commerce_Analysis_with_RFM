@@ -50,7 +50,7 @@ def load_data():
         'order_delivered_customer_date', 'payment_value', 'payment_type',
         'price', 'freight_value', 'product_weight_g', 'review_score',
         'product_category_name_english', 'customer_unique_id', 'customer_state',
-        'customer_city', 'month_year', 'shipping_ratio', 'purchase_hour',
+        'customer_city', 'month_year', 'year', 'shipping_ratio', 'purchase_hour',
         'delivery_accuracy'
     ]
     df = pd.read_csv(
