@@ -44,7 +44,7 @@ st.markdown("""
 # ── LOAD DATA ─────────────────────────────────────────────────────────────────
 @st.cache_data
 def load_data():
-    df = pd.read_csv("main_data.csv", parse_dates=["order_purchase_timestamp"])
+    df = pd.read_csv(os.path.join(os.path.dirname(__file__), "main_data.csv"), parse_dates=["order_purchase_timestamp"])
     df["year"]       = df["order_purchase_timestamp"].dt.year
     df["month"]      = df["order_purchase_timestamp"].dt.month
     df["year_month"] = df["order_purchase_timestamp"].dt.to_period("M").astype(str)
