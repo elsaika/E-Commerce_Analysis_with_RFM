@@ -90,7 +90,7 @@ with st.sidebar:
         help="Pilih tahun yang ingin ditampilkan"
     )
 
-    all_cats = sorted(df_raw["product_category_name_english"].unique())
+    all_cats = sorted(df_raw["product_category_name_english"].dropna().unique())
     sel_cats = st.multiselect(
         "Kategori Produk (opsional)",
         options=all_cats,
