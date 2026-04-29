@@ -122,16 +122,16 @@ df_raw = load_data()
 
 if df_raw is None:
     st.error(
-        "⚠️ File `main_data.csv` tidak ditemukan. "
+        "File `main_data.csv` tidak ditemukan. "
         "Pastikan file berada satu folder dengan `dashboard.py`."
     )
     st.stop()
 
 # ── SIDEBAR ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("## 🛒 Olist Dashboard")
+    st.markdown("## Olist Dashboard")
     st.markdown("---")
-    st.markdown("## 🔍 Filter Data")
+    st.markdown("## Filter Data")
 
     years = sorted(df_raw["year"].dropna().astype(int).unique())
     sel_years = st.multiselect(
@@ -168,7 +168,7 @@ if sel_cats:
     df = df[df["product_category_name_english"].isin(sel_cats)]
 
 # ── HEADER ────────────────────────────────────────────────────────────────────
-st.markdown("# 🛒 E-Commerce Olist — Analisis Data Dashboard")
+st.markdown("# E-Commerce Olist — Analisis Data Dashboard")
 st.markdown(
     f"Menampilkan data **{df['order_purchase_timestamp'].min().strftime('%b %Y')}** "
     f"s/d **{df['order_purchase_timestamp'].max().strftime('%b %Y')}** · "
@@ -186,25 +186,25 @@ total_cust    = df["customer_unique_id"].nunique()
 c1, c2, c3, c4 = st.columns(4)
 with c1:
     st.markdown(f"""<div class="metric-card">
-        <h3>💰 Total Revenue</h3>
+        <h3>TOTAL REVENUE</h3>
         <h2>R$ {total_rev/1e6:.2f}M</h2>
         <small>Semua transaksi delivered</small>
     </div>""", unsafe_allow_html=True)
 with c2:
     st.markdown(f"""<div class="metric-card">
-        <h3>🛍️ Total Orders</h3>
+        <h3>TOTAL ORDERS</h3>
         <h2>{total_orders:,}</h2>
         <small>Order unik (status: delivered)</small>
     </div>""", unsafe_allow_html=True)
 with c3:
     st.markdown(f"""<div class="metric-card">
-        <h3>🧾 Avg Order Value</h3>
+        <h3>AVERAGE PRDER VALUE</h3>
         <h2>R$ {avg_order_val:,.0f}</h2>
         <small>Rata-rata per transaksi</small>
     </div>""", unsafe_allow_html=True)
 with c4:
     st.markdown(f"""<div class="metric-card">
-        <h3>👤 Total Pelanggan</h3>
+        <h3>TOTAL CUSTOMER</h3>
         <h2>{total_cust:,}</h2>
         <small>Pelanggan unik</small>
     </div>""", unsafe_allow_html=True)
@@ -213,9 +213,9 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 # ── TABS ──────────────────────────────────────────────────────────────────────
 tab1, tab2, tab3 = st.tabs([
-    "📦 Pertanyaan 1: Revenue per Kategori",
-    "👥 Pertanyaan 2: Segmentasi RFM",
-    "🔍 Eksplorasi Data",
+    "Pertanyaan 1: Revenue per Kategori",
+    "Pertanyaan 2: Segmentasi RFM",
+    "Eksplorasi Data",
 ])
 
 # ════════════════════════════════════════════════════════════════════════════════
@@ -335,7 +335,7 @@ with tab1:
     dengan puncak revenue pada <b>{peak_month}</b>.
     </div>""", unsafe_allow_html=True)
 
-    with st.expander("📋 Lihat Tabel Top Kategori"):
+    with st.expander("Lihat Tabel Top Kategori"):
         tbl = top_cat.reset_index()
         tbl.columns = ["Kategori Produk", "Total Revenue (R$)"]
         tbl["Total Revenue (R$)"] = tbl["Total Revenue (R$)"].map(
@@ -344,7 +344,7 @@ with tab1:
         tbl.index = tbl.index + 1
         st.dataframe(tbl, use_container_width=True)
 
-    with st.expander("📋 Lihat Tabel Tren Bulanan"):
+    with st.expander("Lihat Tabel Tren Bulanan"):
         m_tbl = monthly.copy()
         m_tbl.columns = ["Periode", "Revenue (R$)"]
         m_tbl["Revenue (R$)"] = m_tbl["Revenue (R$)"].map(lambda x: f"R$ {x:,.0f}")
@@ -444,7 +444,7 @@ with tab2:
     plt.close()
 
     # Heatmap
-    st.markdown("#### 🔥 RFM Heatmap — Rata-rata Monetary per Kombinasi R & F Score")
+    st.markdown("#### RFM Heatmap — Rata-rata Monetary per Kombinasi R & F Score")
     rfm_pivot = rfm.pivot_table(
         index="R_Score", columns="F_Score", values="Monetary", aggfunc="mean"
     ).sort_index(ascending=False)
@@ -503,7 +503,7 @@ with tab2:
     Fokus retensi pada segmen At Risk dan Lost dapat memulihkan revenue yang berpotensi hilang.
     </div>""", unsafe_allow_html=True)
 
-    with st.expander("📋 Lihat Tabel Ringkasan RFM per Segmen"):
+    with st.expander("Lihat Tabel Ringkasan RFM per Segmen"):
         rfm_tbl = rfm.groupby("Segment").agg(
             Jumlah_Pelanggan = ("customer_unique_id", "count"),
             Avg_Recency_Hari = ("Recency",   "mean"),
@@ -518,7 +518,7 @@ with tab2:
         )
         st.dataframe(rfm_tbl, use_container_width=True)
 
-    with st.expander("🔍 Filter Detail Pelanggan per Segmen"):
+    with st.expander("Filter Detail Pelanggan per Segmen"):
         sel_seg = st.selectbox("Pilih Segmen", SEG_ORDER)
         seg_df  = (
             rfm[rfm["Segment"] == sel_seg][
@@ -544,7 +544,7 @@ with tab3:
 
     # Metode Pembayaran
     with col1:
-        st.markdown("**💳 Metode Pembayaran Populer**")
+        st.markdown("**Metode Pembayaran Populer**")
         pay_counts = df["payment_type"].value_counts()
         fig, ax = plt.subplots(figsize=(6, 4))
         colors = [COLOR_H if i == 0 else COLOR_MAIN for i in range(len(pay_counts))]
@@ -566,7 +566,7 @@ with tab3:
 
     # Aktivitas per Jam
     with col2:
-        st.markdown("**⏰ Aktivitas Pembelian per Jam**")
+        st.markdown("**Aktivitas Pembelian per Jam**")
         hour_counts = df["purchase_hour"].value_counts().sort_index()
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.plot(hour_counts.index, hour_counts.values,
@@ -592,7 +592,7 @@ with tab3:
 
     # Top Kota
     with col3:
-        st.markdown("**🏙️ Top 10 Kota dengan Transaksi Tertinggi**")
+        st.markdown("**Top 10 Kota dengan Transaksi Tertinggi**")
         top_cities = df["customer_city"].value_counts().head(10)
         fig, ax = plt.subplots(figsize=(6, 4))
         colors = [COLOR_H if i == 0 else COLOR_MAIN for i in range(10)]
@@ -616,7 +616,7 @@ with tab3:
 
     # Matriks Korelasi
     with col4:
-        st.markdown("**📊 Matriks Korelasi Variabel Kunci**")
+        st.markdown("**Matriks Korelasi Variabel Kunci**")
         corr_cols = [
             c for c in ["price", "freight_value", "product_weight_g", "review_score"]
             if c in df.columns
@@ -640,7 +640,7 @@ with tab3:
 
     # Preview data
     st.markdown("---")
-    st.markdown("### 📄 Preview Data Utama")
+    st.markdown("### Preview Data Utama")
     n_rows = st.slider(
         "Jumlah baris yang ditampilkan", 5, 50, 10, key="preview_slider"
     )
