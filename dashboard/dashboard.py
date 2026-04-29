@@ -101,14 +101,14 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("""
-    **📊 Sumber Data**
-    Brazilian E-Commerce Public Dataset by Olist (Kaggle)
+    **Sumber Data:**
+    Brazilian E-Commerce Public Dataset by Olist
 
-    **📅 Periode Data**
+    **Periode Data:**
     Sep 2016 – Okt 2018
 
-    **👤 Dibuat oleh**
-    [Nama Mahasiswa]
+    **Dibuat oleh**
+    [Elsa Ika Rahmani]
     """)
 
 # ── FILTER DATA ───────────────────────────────────────────────────────────────
@@ -138,25 +138,25 @@ total_cust     = df["customer_unique_id"].nunique()
 c1, c2, c3, c4 = st.columns(4)
 with c1:
     st.markdown(f"""<div class="metric-card">
-        <h3>💰 Total Revenue</h3>
+        <h3>Total Revenue</h3>
         <h2>R$ {total_rev/1e6:.2f}M</h2>
         <small>Semua transaksi delivered</small>
     </div>""", unsafe_allow_html=True)
 with c2:
     st.markdown(f"""<div class="metric-card">
-        <h3>📦 Total Orders</h3>
+        <h3>Total Orders</h3>
         <h2>{total_orders:,}</h2>
         <small>Order unik (status: delivered)</small>
     </div>""", unsafe_allow_html=True)
 with c3:
     st.markdown(f"""<div class="metric-card">
-        <h3>🧾 Avg Order Value</h3>
+        <h3>Avg Order Value</h3>
         <h2>R$ {avg_order_val:,.0f}</h2>
         <small>Rata-rata per transaksi</small>
     </div>""", unsafe_allow_html=True)
 with c4:
     st.markdown(f"""<div class="metric-card">
-        <h3>👥 Total Pelanggan</h3>
+        <h3>Total Pelanggan</h3>
         <h2>{total_cust:,}</h2>
         <small>Pelanggan unik</small>
     </div>""", unsafe_allow_html=True)
@@ -165,8 +165,8 @@ st.markdown("<br>", unsafe_allow_html=True)
 
 # ── TABS ──────────────────────────────────────────────────────────────────────
 tab1, tab2 = st.tabs([
-    "📦 Pertanyaan 1 — Revenue per Kategori",
-    "👥 Pertanyaan 2 — Segmentasi RFM"
+    "Pertanyaan 1: Revenue per Kategori",
+    "Pertanyaan 2: Segmentasi RFM"
 ])
 
 # ════════════════════════════════════════════════════════════════════════════════
@@ -348,7 +348,7 @@ with tab2:
     plt.close()
 
     # ── Heatmap ──────────────────────────────────────────────────────────────
-    st.markdown("#### 🔥 RFM Heatmap — Rata-rata Monetary per Kombinasi R & F Score")
+    st.markdown("#### RFM Heatmap — Rata-rata Monetary per Kombinasi R & F Score")
     rfm_pivot = rfm.pivot_table(
         index="R_Score", columns="F_Score",
         values="Monetary", aggfunc="mean"
