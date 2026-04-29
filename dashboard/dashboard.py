@@ -120,7 +120,7 @@ if sel_cats:
     df = df[df["product_category_name_english"].isin(sel_cats)]
 
 # ── HEADER ────────────────────────────────────────────────────────────────────
-st.markdown("# 🛒 E-Commerce Olist — Analisis Data Dashboard")
+st.markdown("# E-Commerce Olist — Analisis Data Dashboard")
 st.markdown(
     f"Menampilkan data **{df['order_purchase_timestamp'].min().strftime('%b %Y')}** "
     f"s/d **{df['order_purchase_timestamp'].max().strftime('%b %Y')}** · "
@@ -354,7 +354,7 @@ with tab2:
         values="Monetary", aggfunc="mean"
     ).sort_index(ascending=False)
 
-    annot_labels = rfm_pivot.applymap(
+    annot_labels = rfm_pivot.map(
         lambda x: f"R${x:,.0f}" if not pd.isna(x) else "n/a"
     )
 
@@ -415,7 +415,7 @@ with tab2:
 st.markdown("---")
 st.markdown("""
 <div style="text-align:center; color:#6c757d; font-size:13px; padding:10px 0">
-    📊 <b>E-Commerce Olist Dashboard</b> · Proyek Analisis Data Dicoding ·
+    <b>E-Commerce Olist Dashboard Analysis with RFM</b> · Proyek Analisis Data Dicoding ·
     Sumber: <a href="https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce" target="_blank">
     Kaggle — Brazilian E-Commerce Public Dataset by Olist</a>
 </div>
