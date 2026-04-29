@@ -1,178 +1,171 @@
+import os
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
+import plotly.express as px
 
-st.set_page_config(page_title="E-Commerce RFM Dashboard", layout="wide")
+# ── CONFIG ─────────────────────────────────────
+st.set_page_config(
+    page_title="Olist Dashboard",
+    layout="wide"
+)
 
-# ======================
-# LOAD DATA
-# ======================
+# ── LOAD DATA ──────────────────────────────────
 @st.cache_data
 def load_data():
-    df = pd.read_csv("dashboard/main_data.csv")
+    df = pd.read_csv("main_data.csv", parse_dates=["order_purchase_timestamp"])
+
+    df["year"] = df["order_purchase_timestamp"].dt.year
+    df["year_month"] = df["order_purchase_timestamp"].dt.to_period("M").astype(str)
+
     return df
+
+@st.cache_data
+def compute_rfm(df):
+    ref = df["order_purchase_timestamp"].max() + pd.Timedelta(days=1)
+
+    rfm = df.groupby("customer_unique_id").agg(
+        Recency=("order_purchase_timestamp", lambda x: (ref - x.max()).days),
+        Frequency=("order_id", "nunique"),
+        Monetary=("payment_value", "sum")
+    ).reset_index()
+
+    rfm["R"] = pd.qcut(rfm["Recency"], 5, labels=[5,4,3,2,1])
+    rfm["F"] = pd.qcut(rfm["Frequency"].rank(method="first"), 5, labels=[1,2,3,4,5])
+    rfm["M"] = pd.qcut(rfm["Monetary"], 5, labels=[1,2,3,4,5])
+
+    def segment(row):
+        r,f,m = int(row["R"]), int(row["F"]), int(row["M"])
+        if r>=4 and f>=4 and m>=4: return "Champions"
+        elif r>=3 and f>=3: return "Loyal"
+        elif r>=4: return "New"
+        elif r<=2 and f>=3: return "At Risk"
+        else: return "Others"
+
+    rfm["Segment"] = rfm.apply(segment, axis=1)
+    return rfm
+
 
 df = load_data()
 
-# ======================
-# DATA CLEANING
-# ======================
-if df.empty:
-    st.error("Dataset kosong")
-    st.stop()
+# ── SIDEBAR ────────────────────────────────────
+st.sidebar.title("Filter")
 
-# pastikan kolom penting ada
-required_cols = [
-    "order_purchase_timestamp",
-    "customer_unique_id",
-    "payment_value",
-    "product_category_name_english"
-]
+years = sorted(df["year"].unique())
+selected_years = st.sidebar.multiselect("Tahun", years, default=years)
 
-for col in required_cols:
-    if col not in df.columns:
-        st.error(f"Kolom {col} tidak ditemukan")
-        st.stop()
+categories = sorted(df["product_category_name_english"].dropna().unique())
+selected_cat = st.sidebar.multiselect("Kategori", categories)
 
-# datetime
-df["order_purchase_timestamp"] = pd.to_datetime(
-    df["order_purchase_timestamp"], errors="coerce"
-)
+# ── FILTER ─────────────────────────────────────
+df = df[df["year"].isin(selected_years)]
 
-# kategori aman (hindari float vs string error)
-df["product_category_name_english"] = (
-    df["product_category_name_english"]
-    .astype(str)
-    .replace("nan", None)
-)
+if selected_cat:
+    df = df[df["product_category_name_english"].isin(selected_cat)]
 
-# ======================
-# SIDEBAR FILTER
-# ======================
-st.sidebar.header("Filter")
+# ── HEADER ─────────────────────────────────────
+st.title("E-Commerce Dashboard (Olist)")
 
-years = sorted(df["order_purchase_timestamp"].dt.year.dropna().unique())
-selected_year = st.sidebar.selectbox("Pilih Tahun", years)
+# ── KPI ────────────────────────────────────────
+total_rev = df["payment_value"].sum()
+total_orders = df["order_id"].nunique()
+avg_order = df.groupby("order_id")["payment_value"].sum().mean()
+total_cust = df["customer_unique_id"].nunique()
 
-all_cats = sorted(df["product_category_name_english"].dropna().unique())
-selected_cats = st.sidebar.multiselect("Kategori Produk", all_cats)
+c1,c2,c3,c4 = st.columns(4)
+c1.metric("Revenue", f"R$ {total_rev/1e6:.2f}M")
+c2.metric("Orders", f"{total_orders:,}")
+c3.metric("Avg Order", f"R$ {avg_order:,.0f}")
+c4.metric("Customers", f"{total_cust:,}")
 
-# filter data
-df_filtered = df[df["order_purchase_timestamp"].dt.year == selected_year]
+st.divider()
 
-if selected_cats:
-    df_filtered = df_filtered[
-        df_filtered["product_category_name_english"].isin(selected_cats)
-    ]
+# ── TABS ───────────────────────────────────────
+tab1, tab2 = st.tabs(["Revenue Analysis", "RFM Segmentation"])
 
-if df_filtered.empty:
-    st.warning("Data kosong setelah filter")
-    st.stop()
+# =========================================================
+# TAB 1
+# =========================================================
+with tab1:
 
-# ======================
-# KPI
-# ======================
-st.title("📊 E-Commerce RFM Dashboard")
+    st.subheader("Revenue per Kategori")
 
-total_revenue = df_filtered["payment_value"].sum()
-total_orders = df_filtered.shape[0]
-total_customers = df_filtered["customer_unique_id"].nunique()
+    top_n = st.slider("Top N", 5, 20, 10)
 
-col1, col2, col3 = st.columns(3)
+    top_cat = (
+        df.groupby("product_category_name_english")["payment_value"]
+        .sum()
+        .sort_values(ascending=False)
+        .head(top_n)
+        .reset_index()
+    )
 
-col1.metric("Total Revenue", f"R$ {total_revenue:,.0f}")
-col2.metric("Total Orders", total_orders)
-col3.metric("Total Customers", total_customers)
+    # BAR
+    fig_bar = px.bar(
+        top_cat,
+        x="payment_value",
+        y="product_category_name_english",
+        orientation="h",
+        text_auto=".2s"
+    )
 
-# ======================
-# TREND BULANAN
-# ======================
-st.subheader("Trend Revenue Bulanan")
+    fig_bar.update_layout(yaxis=dict(categoryorder="total ascending"))
 
-df_filtered["month"] = df_filtered["order_purchase_timestamp"].dt.to_period("M").astype(str)
+    st.plotly_chart(fig_bar, use_container_width=True)
 
-monthly = df_filtered.groupby("month")["payment_value"].sum().reset_index()
+    # LINE
+    monthly = (
+        df.groupby("year_month")["payment_value"]
+        .sum()
+        .reset_index()
+    )
 
-fig, ax = plt.subplots()
-ax.plot(monthly["month"], monthly["payment_value"])
-ax.set_xticks(range(len(monthly["month"])))
-ax.set_xticklabels(monthly["month"], rotation=45)
-ax.set_title("Revenue per Month")
+    fig_line = px.line(
+        monthly,
+        x="year_month",
+        y="payment_value",
+        markers=True
+    )
 
-st.pyplot(fig)
+    st.plotly_chart(fig_line, use_container_width=True)
 
-# ======================
-# TOP KATEGORI
-# ======================
-st.subheader("Top Kategori Produk")
+    # INSIGHT DINAMIS
+    top1 = top_cat.iloc[0]
+    peak = monthly.loc[monthly["payment_value"].idxmax()]
 
-top_cat = (
-    df_filtered.groupby("product_category_name_english")["payment_value"]
-    .sum()
-    .sort_values(ascending=False)
-    .head(5)
-)
+    st.info(f"""
+    Top kategori: **{top1['product_category_name_english']}**  
+    Revenue: **R$ {top1['payment_value']/1e6:.2f}M**
 
-fig2, ax2 = plt.subplots()
-top_cat.plot(kind="bar", ax=ax2)
-ax2.set_title("Top 5 Category")
+    Peak revenue terjadi pada **{peak['year_month']}**
+    """)
 
-st.pyplot(fig2)
+# =========================================================
+# TAB 2
+# =========================================================
+with tab2:
 
-# ======================
-# RFM ANALYSIS
-# ======================
-st.subheader("RFM Analysis")
+    st.subheader("RFM Segmentation")
 
-snapshot_date = df_filtered["order_purchase_timestamp"].max()
+    rfm = compute_rfm(df)
 
-rfm = df_filtered.groupby("customer_unique_id").agg({
-    "order_purchase_timestamp": lambda x: (snapshot_date - x.max()).days,
-    "customer_unique_id": "count",
-    "payment_value": "sum"
-})
+    seg = rfm["Segment"].value_counts().reset_index()
+    seg.columns = ["Segment", "Count"]
 
-rfm.columns = ["Recency", "Frequency", "Monetary"]
+    fig_seg = px.bar(seg, x="Segment", y="Count", color="Segment")
+    st.plotly_chart(fig_seg, use_container_width=True)
 
-# scoring
-rfm["R_score"] = pd.qcut(rfm["Recency"], 4, labels=[4,3,2,1])
-rfm["F_score"] = pd.qcut(rfm["Frequency"].rank(method="first"), 4, labels=[1,2,3,4])
-rfm["M_score"] = pd.qcut(rfm["Monetary"], 4, labels=[1,2,3,4])
+    # Monetary
+    monet = rfm.groupby("Segment")["Monetary"].mean().reset_index()
 
-rfm["RFM_score"] = (
-    rfm["R_score"].astype(str) +
-    rfm["F_score"].astype(str) +
-    rfm["M_score"].astype(str)
-)
+    fig_m = px.bar(monet, x="Segment", y="Monetary", color="Segment")
+    st.plotly_chart(fig_m, use_container_width=True)
 
-# ======================
-# HEATMAP RFM
-# ======================
-rfm_pivot = rfm.pivot_table(
-    index="R_score",
-    columns="F_score",
-    values="Monetary",
-    aggfunc="mean"
-)
+    # Insight
+    biggest = seg.iloc[0]
+    st.info(f"""
+    Segmen terbesar adalah **{biggest['Segment']}**
+    dengan jumlah **{biggest['Count']} pelanggan**.
 
-fig3, ax3 = plt.subplots()
-sns.heatmap(rfm_pivot, annot=True, fmt=".0f", ax=ax3)
-
-st.pyplot(fig3)
-
-# ======================
-# INSIGHT OTOMATIS
-# ======================
-st.subheader("Insight")
-
-top_cat3 = top_cat.head(3)
-
-if len(top_cat3) > 0:
-    text = "💡 Top kategori:\n"
-    for i in range(len(top_cat3)):
-        text += f"- {top_cat3.index[i]} (R$ {top_cat3.values[i]:,.0f})\n"
-    st.markdown(text)
-else:
-    st.write("Tidak ada data kategori")
+    Ini menunjukkan distribusi customer belum optimal.
+    """)
