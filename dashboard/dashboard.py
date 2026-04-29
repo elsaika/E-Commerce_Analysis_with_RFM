@@ -45,10 +45,21 @@ st.markdown("""
 # ── LOAD DATA ─────────────────────────────────────────────────────────────────
 @st.cache_data
 def load_data():
-    df = pd.read_csv(os.path.join(os.path.dirname(__file__), "main_data.csv"), parse_dates=["order_purchase_timestamp"])
-    df["year"]       = df["order_purchase_timestamp"].dt.year
-    df["month"]      = df["order_purchase_timestamp"].dt.month
-    df["year_month"] = df["order_purchase_timestamp"].dt.to_period("M").astype(str)
+    cols = [
+        'order_id', 'order_purchase_timestamp', 'order_estimated_delivery_date',
+        'order_delivered_customer_date', 'payment_value', 'payment_type',
+        'price', 'freight_value', 'product_weight_g', 'review_score',
+        'product_category_name_english', 'customer_unique_id', 'customer_state',
+        'customer_city', 'month_year', 'shipping_ratio', 'purchase_hour',
+        'delivery_accuracy'
+    ]
+    df = pd.read_csv(
+        os.path.join(os.path.dirname(__file__), "main_data.csv"),
+        usecols=lambda c: c in cols,
+        parse_dates=["order_purchase_timestamp"]
+    )
+    df.sort_values('order_purchase_timestamp', inplace=True)
+    df.reset_index(drop=True, inplace=True)
     return df
 
 @st.cache_data
